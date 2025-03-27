@@ -1,5 +1,6 @@
 package com.hmdp.service.impl;
 
+import com.hmdp.config.RedissonConfig;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
@@ -8,9 +9,13 @@ import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
+import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +36,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private ISeckillVoucherService iSeckillVoucherService;
     @Autowired
     private RedisIdWorker redisIdWorker;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private RedissonClient redissonClient;
 
     @Override
     public Result seckillVoucher(Long voucherId) {
@@ -51,16 +61,30 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
         //5.扣减库存
         Long userId = UserHolder.getUser().getId();
-        synchronized (userId.toString().intern()){
+        //创建锁对象
+//        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
+        //获取锁
+        boolean isLock = lock.tryLock();
+        //判断是否获取锁成功
+        if (!isLock) {
+            //获取锁失败，直接返回失败或者重试
+            return Result.fail("不允许重复下单");
+        }
+        //获取代理对象
+        try {
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
             return proxy.creatVoucherOrder(voucherId);
-            //或者在成员变量中直接注入自己，通过注入自己的对象去调用事务
+        }finally {
+            lock.unlock();
         }
+        //或者在成员变量中直接注入自己，通过注入自己的对象去调用事务
+
 
     }
     @Transactional
     public  Result creatVoucherOrder(Long voucherId) {
-        //4.1.判断用户是否已经购买过
+        //4.1.判断用户是否已经购买
         Long userId = UserHolder.getUser().getId();
         int count = query().eq("user_id", userId).eq("voucher_id", voucherId).count() ;
         if(count>0){
