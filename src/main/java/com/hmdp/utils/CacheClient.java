@@ -15,11 +15,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+/**
+ * 缓存逻辑过期解决缓存击穿
+ */
 @Component
 @Slf4j
 public class CacheClient {
 
     private StringRedisTemplate stringRedisTemplate;
+
     public CacheClient(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
     }
@@ -27,6 +31,7 @@ public class CacheClient {
     public void set(String key, Object value, Long time, TimeUnit unit) {
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
     }
+
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {
         // 设置逻辑过期
         RedisData redisData = new RedisData();
@@ -34,10 +39,11 @@ public class CacheClient {
         redisData.setExpireTime(LocalDateTime.now().plusSeconds(unit.toSeconds(time)));
         stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(redisData));
     }
+
     /**
      * 缓存穿透解决缓存击穿
      */
-    public <R,ID> R queryWithPassThrough(String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+    public <R, ID> R queryWithPassThrough(String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         //1.从redis中查询商铺缓存
         String key = keyPrefix + id;
         String json = stringRedisTemplate.opsForValue().get(key);
@@ -114,10 +120,11 @@ public class CacheClient {
 
     //线程池
     private static final ExecutorService CACHE_REBUILD_EXECUTOR = Executors.newFixedThreadPool(10);
+
     /**
      * 逻辑过期解决缓存击穿
      */
-    public <R,ID> R queryWithLogicalExpire(String keyPrefix,ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
+    public <R, ID> R queryWithLogicalExpire(String keyPrefix, ID id, Class<R> type, Function<ID, R> dbFallback, Long time, TimeUnit unit) {
         //1.从redis中查询商铺缓存
         String key = keyPrefix + id;
         String shopJson = stringRedisTemplate.opsForValue().get(key);
@@ -133,7 +140,7 @@ public class CacheClient {
         LocalDateTime expireTime = redisData.getExpireTime();
         R r = JSONUtil.toBean((JSONObject) redisData.getData(), type);
         //5.判断逻辑时间是否为空
-        if (expireTime != null&&expireTime.isAfter(LocalDateTime.now())) {
+        if (expireTime != null && expireTime.isAfter(LocalDateTime.now())) {
             //5.1.未过期，直接返回店铺信息
             return r;
         }
@@ -161,12 +168,14 @@ public class CacheClient {
         //6.3.返回旧数据
         return r;
     }
+
     //锁
-    private boolean tryLock(String key){
+    private boolean tryLock(String key) {
         Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", 10, TimeUnit.SECONDS);
         return Boolean.TRUE.equals(flag);
     }
-    private void unLock(String key){
+
+    private void unLock(String key) {
         stringRedisTemplate.delete(key);
     }
 }

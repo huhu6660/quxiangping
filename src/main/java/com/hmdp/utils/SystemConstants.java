@@ -7,4 +7,5 @@ public class SystemConstants {
     public static final String USER_PHONE_ERROR = "手机号格式错误";
     public static final int DEFAULT_PAGE_SIZE = 5;
     public static final int MAX_PAGE_SIZE = 10;
+    public static final String USER_PASSWORD_ERROR = "密码错误";
 }

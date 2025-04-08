@@ -15,13 +15,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+/**
+ * 刷新token拦截器
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Configuration
 public class RefreshTokenInterceptor implements HandlerInterceptor {
     private StringRedisTemplate stringRedisTemplate;
-
 
 
     @Override

@@ -34,12 +34,7 @@ import static com.hmdp.utils.RedisConstants.*;
 import static com.hmdp.utils.SystemConstants.USER_NICK_NAME_PREFIX;
 
 /**
- * <p>
- * 服务实现类
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ *用户登录实现类
  */
 @Service
 @Slf4j
@@ -68,44 +63,61 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return Result.ok();
     }
 
+    /**
+     * 登录功能
+     * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
+     */
     @Override
     public Result login(LoginFormDTO loginForm, HttpSession session) {
         //1.校验手机号
         String phone = loginForm.getPhone();
         if(RegexUtils.isPhoneInvalid(phone)){
-            //2.如果不符合，返回错误信息
+            //如果不符合，返回错误信息
             return Result.fail(SystemConstants.USER_PHONE_ERROR);
         }
-        //2.校验验证码
+        //校验验证码
         String  code = loginForm.getCode();
-        //从redis获取验证码
-        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY+phone);
-        if(cacheCode == null || !cacheCode.equals(code)){
-            return Result.fail(SystemConstants.USER_CODE_ERROR);
-        }
+        //校验密码
+        String password = loginForm.getPassword();
         //3.查询用户
         User user = query().eq("phone", phone).one();
-        //4.不存在，创建并保存用户
-         if(user == null){
-             user = uscreateUserWithPhone(phone);
-         }
-        //5.保存用户信息到session中，并返回
-        //7.保存用户信息到redis中
-        //随机生成token,作为登录令牌
+        //判断是用密码登录还是验证码登录
+        if(code != null){
+            //从redis获取验证码
+            String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY+phone);
+            if(cacheCode == null || !cacheCode.equals(code)){
+                return Result.fail(SystemConstants.USER_CODE_ERROR);
+            }
+            //4.不存在，创建并保存用户
+            if(user == null){
+                user = uscreateUserWithPhone(phone);
+            }
+        }else{
+            //判断密码是否正确
+            if (!password.equals(user.getPassword())){
+                return Result.fail(SystemConstants.USER_PASSWORD_ERROR);
+            }
+        }
+
+        //5.随机生成token,作为登录令牌
         String token = UUID.randomUUID().toString(true);
-        //将user对象转为hash存储
+        //6.将user对象转为hash存储
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(), CopyOptions.create().setIgnoreNullValue(true).setFieldValueEditor((s, o) -> o.toString()));
         //存储
         String tokenKey = LOGIN_USER_KEY+token;
         stringRedisTemplate.opsForHash().putAll(tokenKey,userMap);
-        //设置token有效期
+        //7.设置token有效期
         stringRedisTemplate.expire(tokenKey,LOGIN_USER_TTL,TimeUnit.MINUTES);
-        //返回token
-        //6.返回用户信息
+        //8.返回用户信息
         return Result.ok(token);
     }
 
+    /**
+     * 创建新用户
+     * @param phone
+     * @return
+     */
     private User uscreateUserWithPhone(String phone) {
         //1.创建用户
         User user = new User();
@@ -114,6 +126,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         save(user);
         return user;
     }
+
+    /**
+     * 签到功能
+     * @return
+     */
     @Override
     public Result sign() {
         // 1.获取当前登录用户
@@ -130,6 +147,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return Result.ok();
     }
 
+    /**
+     * 签到统计功能
+     * @return
+     */
     @Override
     public Result signCount() {
         // 1.获取当前登录用户
@@ -172,6 +193,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return Result.ok(count);
     }
 
+    /**
+     * 登出功能
+     * @return 无
+     */
     @Override
     public Result logout() {
         UserHolder.removeUser();

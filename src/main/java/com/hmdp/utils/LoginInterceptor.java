@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 
 import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
 
+/**
+ * 登录拦截器
+ */
 @Configuration
 public class LoginInterceptor implements HandlerInterceptor {
 

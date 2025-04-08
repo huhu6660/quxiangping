@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 滚动结果
+ */
 @Data
 public class ScrollResult {
     private List<?> list;

@@ -16,24 +16,25 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>
- *  服务实现类
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ * 商铺类型服务实现类
  */
 @Service
 @Slf4j
 public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> implements IShopTypeService {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    /**
+     * 获取所有商铺类型
+     *
+     * @return 商铺类型列表
+     */
     @Override
     public List<ShopType> typelist() {
         //1.从缓存中查询数据
         String key = RedisConstants.CACHE_SHOP_TYPE_KEY;
         String shopTypeJson = stringRedisTemplate.opsForValue().get(key);
-        if(StrUtil.isNotBlank(shopTypeJson)){
+        if (StrUtil.isNotBlank(shopTypeJson)) {
             //存在，直接返回
             List<ShopType> shopTypes = JSONUtil.toList(shopTypeJson, ShopType.class);
             log.info("从缓存中获得数据");
@@ -42,7 +43,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
         //2.不存在，查询数据库
         List<ShopType> shopTypes = query().orderByAsc("sort").list();
         //3.不存在，返回错误
-        if(shopTypes == null){
+        if (shopTypes == null) {
             return null;
         }
         //4.存在，写入redis

@@ -30,7 +30,7 @@ import java.util.concurrent.Executors;
 
 /**
  * <p>
- * 服务实现类
+ * 秒杀实现类
  * </p>
  */
 @Service
@@ -51,47 +51,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         SECKILL_SCRIPT.setLocation(new ClassPathResource("seckill.lua"));
         SECKILL_SCRIPT.setResultType(Long.class);
     }
-
-//    @Override
-//    public Result seckillVoucher(Long voucherId) {
-//        //1.查询优惠卷
-//        SeckillVoucher id = iSeckillVoucherService.getById(voucherId);
-//        //2.判断秒杀是否开始
-//        if (id.getBeginTime().isAfter(LocalDateTime.now())) {
-//            // 秒杀尚未开始
-//            return Result.fail("秒杀尚未开始");
-//        }
-//        //3.判断秒杀卷是否结束
-//        if (id.getEndTime().isBefore(LocalDateTime.now())){
-//            return Result.fail("秒杀已经结束");
-//        }
-//        //4.判断库存是否不足
-//        if(id.getStock()<1){
-//            return Result.fail("库存不足");
-//        }
-//        //5.扣减库存
-//        Long userId = UserHolder.getUser().getId();
-//        //创建锁对象
-//        RLock lock = redissonClient.getLock("lock:order:" + userId);
-//        //获取锁
-//        boolean isLock = lock.tryLock();
-//        //判断是否获取锁成功
-//        if (!isLock) {
-//            //获取锁失败，直接返回失败或者重试
-//            return Result.fail("不允许重复下单");
-//        }
-//        //获取代理对象
-//        try {
-//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-//            return proxy.creatVoucherOrder(voucherId);
-//        }finally {
-//            lock.unlock();
-//        }
-//        //或者在成员变量中直接注入自己，通过注入自己的对象去调用事务
-//
-//
-//    }
-
     //创建阻塞队列
     private BlockingQueue<VoucherOrder> orderTasks = new ArrayBlockingQueue<>(1024 * 1024);
     //线程池
