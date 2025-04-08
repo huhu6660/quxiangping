@@ -5,9 +5,9 @@ spring:
     name: redis
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/redis?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://101.37.204.19/redis?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
-    password: 1234
+    password: Wgz31415926.
   redis:
     host: 101.37.204.19
     port: 6379
