@@ -12,12 +12,7 @@ import javax.annotation.Resource;
 import java.util.List;
 
 /**
- * <p>
- * 前端控制器
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ * 商店类型控制层
  */
 @RestController
 @RequestMapping("/shop-type")
@@ -25,6 +20,10 @@ public class ShopTypeController {
     @Resource
     private IShopTypeService typeService;
 
+    /**
+     * 查询所有商店类型
+     * @return 商店类型列表
+     */
     @GetMapping("list")
     public Result queryTypeList() {
         List<ShopType> typeList = typeService.typelist();
